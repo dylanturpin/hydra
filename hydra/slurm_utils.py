@@ -37,7 +37,6 @@ def get_data_dir(cfg):
     return os.path.join('/scratch', 'ssd001', 'datasets', 'cfg.data.task', 'cfg.data.name')
 
 def write_slurm(cfg):
-
     # set up run directories
     j_dir = get_j_dir(cfg)
 
@@ -53,7 +52,11 @@ def write_slurm(cfg):
     if not hasattr(cfg.slurm, 'error'):
         slurm_opts.append('#SBATCH --error={}/log/%j.err'.format(j_dir))
 
-    slurm_opts = ['#!/bin/bash'] + slurm_opts + ['bash {0}/scripts/{1}.sh'.format(j_dir, resolve_name(cfg.slurm.job_name))]
+    sh_path = os.path.join(j_dir, "scripts", resolve_name(cfg.slurm.job_name) + '.sh')
+    slurm_opts = ['#!/bin/bash'] \
+                + slurm_opts \
+                + ['chmod u+x {0}/scripts/{1}.sh'.format(j_dir, resolve_name(cfg.slurm.job_name))] \
+                + [cfg.singularity.bin_path + ' --debug -vvv exec --userns --nv --writable ' + cfg.singularity.sbox_path + ' ' + sh_path]
 
     # write slurm file
     with open(os.path.join(j_dir, "scripts", resolve_name(cfg.slurm.job_name) + '.slrm'), 'w') as slrmf:
@@ -87,7 +90,7 @@ python3 {3} {4}
             j_dir,
             hydra_cwd,
             venv_sh,
-            exec_path,
+            cfg.exec_path,
             overrides
         ))
 
