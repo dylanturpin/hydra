@@ -53,10 +53,12 @@ def write_slurm(cfg):
         slurm_opts.append('#SBATCH --error={}/log/%j.err'.format(j_dir))
 
     sh_path = os.path.join(j_dir, "scripts", resolve_name(cfg.slurm.job_name) + '.sh')
+    binds = list(cfg.singularity.binds)
+    binds.append(f'{sh_path}:/root/script.sh')
     slurm_opts = ['#!/bin/bash'] \
                 + slurm_opts \
-                + ['chmod u+x {0}/scripts/{1}.sh'.format(j_dir, resolve_name(cfg.slurm.job_name))] \
-                + [cfg.singularity.bin_path + ' --debug -vvv exec --userns --nv --writable ' + cfg.singularity.sbox_path + ' ' + sh_path]
+                + [cfg.singularity.bin_path + ' --debug -vvv exec --userns --nv --writable ' + ' --bind ' + ','.join(binds) + ' ' + cfg.singularity.sbox_path + ' chmod u+x /root/script.sh'] \
+                + [cfg.singularity.bin_path + ' --debug -vvv exec --userns --nv --writable ' + ' --bind ' + ','.join(binds) + ' ' + cfg.singularity.sbox_path + ' /root/script.sh']
 
     # write slurm file
     with open(os.path.join(j_dir, "scripts", resolve_name(cfg.slurm.job_name) + '.slrm'), 'w') as slrmf:
@@ -85,11 +87,13 @@ def write_sh(cfg, overrides):
 ln -s /checkpoint/$USER/$SLURM_JOB_ID {0}/$SLURM_JOB_ID
 touch {0}/$SLURM_JOB_ID/DELAYPURGE
 {2}
-python3 {3} {4}
+export WANDB_DIR={3}
+python3 {4} {5}
 """.format(
             j_dir,
             hydra_cwd,
             venv_sh,
+            cfg.slurm_additional.wandb_dir,
             cfg.exec_path,
             overrides
         ))
