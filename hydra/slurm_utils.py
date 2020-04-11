@@ -88,13 +88,14 @@ ln -s /checkpoint/$USER/$SLURM_JOB_ID {0}/$SLURM_JOB_ID
 touch {0}/$SLURM_JOB_ID/DELAYPURGE
 {2}
 export WANDB_DIR={3}
-{4} {5} {6}
+{4} {5} {6} {7}
 """.format(
             j_dir,
             hydra_cwd,
             venv_sh,
             cfg.slurm_additional.wandb_dir,
             cfg.slurm_additional.python_bin,
+            cfg.slurm_additional.python_optstr,
             cfg.exec_path,
             overrides
         ))
