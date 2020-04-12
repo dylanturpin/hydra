@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 from joblib import Parallel, delayed  # type: ignore
-from omegaconf import DictConfig, OmegaConf, open_dict
+from omegaconf import DictConfig, open_dict
 
 from hydra.core.config_loader import ConfigLoader
 from hydra.core.config_search_path import ConfigSearchPath
@@ -33,12 +33,12 @@ class JoblibLauncherSearchPathPlugin(SearchPathPlugin):
     def manipulate_search_path(self, search_path: ConfigSearchPath) -> None:
         # Appends the search path for this plugin to the end of the search path
         search_path.append(
-            "hydra-joblib-launcher", "pkg://hydra_plugins.hydra_joblib_launcher.conf"
+            "hydra-joblib-launcher", "pkg://hydra_plugins.hydra_joblib_launcher.config"
         )
 
 
 class JoblibLauncher(Launcher):
-    def __init__(self, joblib: DictConfig) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Joblib Launcher
 
         Launches parallel jobs using Joblib.Parallel. For details, refer to:
@@ -51,7 +51,7 @@ class JoblibLauncher(Launcher):
         self.config_loader: Optional[ConfigLoader] = None
         self.task_function: Optional[TaskFunction] = None
 
-        self.joblib = joblib
+        self.joblib = kwargs
 
     def setup(
         self,
@@ -63,9 +63,12 @@ class JoblibLauncher(Launcher):
         self.config_loader = config_loader
         self.task_function = task_function
 
-    def launch(self, job_overrides: Sequence[Sequence[str]]) -> Sequence[JobReturn]:
+    def launch(
+        self, job_overrides: Sequence[Sequence[str]], initial_job_idx: int
+    ) -> Sequence[JobReturn]:
         """
         :param job_overrides: a List of List<String>, where each inner list is the arguments for one job run.
+        :param initial_job_idx: Initial job idx in batch.
         :return: an array of return values from run_job with indexes corresponding to the input list indexes.
         """
         setup_globals()
@@ -79,8 +82,7 @@ class JoblibLauncher(Launcher):
 
         # Joblib's backend is hard-coded to loky since the threading
         # backend is incompatible with Hydra
-        joblib_cfg = OmegaConf.to_container(self.joblib, resolve=True)
-        assert isinstance(joblib_cfg, dict)
+        joblib_cfg = self.joblib
         joblib_cfg["backend"] = "loky"
 
         log.info(
@@ -97,7 +99,7 @@ class JoblibLauncher(Launcher):
 
         runs = Parallel(**joblib_cfg)(
             delayed(execute_job)(
-                idx,
+                initial_job_idx + idx,
                 overrides,
                 self.config_loader,
                 self.config,

@@ -31,7 +31,7 @@ class CompletionPlugin(Plugin):
         ...
 
     @abstractmethod
-    def query(self, config_file: Optional[str]) -> None:
+    def query(self, config_name: Optional[str]) -> None:
         ...
 
     @staticmethod
@@ -86,7 +86,9 @@ class CompletionPlugin(Plugin):
             if word.endswith(".") or word.endswith("="):
                 exact_key = word[0:-1]
                 try:
-                    conf_node = config.select(exact_key)
+                    conf_node = OmegaConf.select(
+                        config, exact_key, throw_on_missing=True
+                    )
                 except MissingMandatoryValue:
                     conf_node = ""
                 if conf_node is not None:
@@ -106,7 +108,7 @@ class CompletionPlugin(Plugin):
                 if last_dot != -1:
                     base_key = word[0:last_dot]
                     partial_key = word[last_dot + 1 :]
-                    conf_node = config.select(base_key)
+                    conf_node = OmegaConf.select(config, base_key)
                     key_matches = CompletionPlugin._get_matches(conf_node, partial_key)
                     matches.extend(
                         ["{}.{}".format(base_key, match) for match in key_matches]
@@ -173,7 +175,7 @@ class CompletionPlugin(Plugin):
 
         return matched_groups, exact_match
 
-    def _query(self, config_file: Optional[str], line: str) -> List[str]:
+    def _query(self, config_name: Optional[str], line: str) -> List[str]:
         from .._internal.utils import get_args
 
         new_word = len(line) == 0 or line[-1] == " "
@@ -186,7 +188,7 @@ class CompletionPlugin(Plugin):
             words = words[0:-1]
 
         config = self.config_loader.load_configuration(
-            config_file=config_file, overrides=words, strict=True
+            config_name=config_name, overrides=words, strict=True
         )
 
         fname_prefix, filename = CompletionPlugin._get_filename(word)
@@ -218,5 +220,5 @@ class DefaultCompletionPlugin(CompletionPlugin):
     def provides(self) -> str:
         ...
 
-    def query(self, config_file: Optional[str]) -> None:
+    def query(self, config_name: Optional[str]) -> None:
         ...
