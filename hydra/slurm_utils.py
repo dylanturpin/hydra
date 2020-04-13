@@ -57,6 +57,7 @@ def write_slurm(cfg):
     binds.append(f'{sh_path}:/root/script.sh')
     slurm_opts = ['#!/bin/bash'] \
                 + slurm_opts \
+                + ['mkdir ' + cfg.slurm_additional.checkpoint_dir] \
                 + [cfg.singularity.bin_path + ' --debug -vvv exec --userns --nv --writable ' + ' --bind ' + ','.join(binds) + ' ' + cfg.singularity.sbox_path + ' chmod u+x /root/script.sh'] \
                 + [cfg.singularity.bin_path + ' --debug -vvv exec --userns --nv --writable ' + ' --bind ' + ','.join(binds) + ' ' + cfg.singularity.sbox_path + ' /root/script.sh']
 
