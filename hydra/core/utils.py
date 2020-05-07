@@ -110,6 +110,7 @@ def run_job(
         ret = JobReturn()
         ret.working_dir = working_dir
         task_cfg = copy.deepcopy(config)
+        OmegaConf.set_struct(task_cfg, False)
         del task_cfg["hydra"]
         ret.cfg = task_cfg
         ret.hydra_cfg = OmegaConf.create({"hydra": HydraConfig.get()})
